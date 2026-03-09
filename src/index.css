@@ -1,0 +1,17 @@
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body,#root{height:100%;width:100%;}
+body{font-family:'DM Sans',sans-serif;background:#F4F5F7;color:#1A1A2E;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Plus Jakarta Sans',sans-serif;}
+input,textarea{font-family:'DM Sans',sans-serif;outline:none;border:none;}
+button{cursor:pointer;border:none;font-family:'Plus Jakarta Sans',sans-serif;}
+img{display:block;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#E0E0E0;border-radius:4px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fadeup{animation:fadeUp .35s ease both;}
+:root{
+  --orange:#FF5722;--orange2:#FF8A65;
+  --card:#FFFFFF;--surface:#F0F1F4;--border:rgba(0,0,0,0.08);
+  --text:#1A1A2E;--muted:#7A7A95;--green:#00A67E;--red:#E53935;
+}
