@@ -24,6 +24,7 @@ const auth = firebase.auth();
 const CLOUDINARY_CLOUD = "dw9vlzgyx";
 const CLOUDINARY_UPLOAD_PRESET = "kivo_unsigned";
 const ADMIN_WHATSAPP = "573106593037";
+const ADMIN_UID = "HEYdsAU0eyghGScUELs6LSqWnxr2"; // Solo este usuario ve el panel Admin
 
 
 const fmt = n => new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",minimumFractionDigits:0}).format(n);
@@ -1410,6 +1411,14 @@ function KivoApp() {
   const [favorites, setFavorites] = useLocalState("kivo_favs_v2", []);
   const [tab, setTab] = useState("home");
   const [showAdmin, setShowAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged(u => setCurrentUser(u));
+    return unsub;
+  }, []);
+
+  const isAdmin = currentUser?.uid === ADMIN_UID;
 
   const toggleFav = id => setFavorites(p => p.includes(id)?p.filter(x=>x!==id):[...p,id]);
   const cartCount = cart.reduce((a,i)=>a+i.qty, 0);
@@ -1417,7 +1426,7 @@ function KivoApp() {
   const goTab = t => { setTab(t); setPage({name:t}); setShowAdmin(false); };
 
   const renderPage = () => {
-    if (showAdmin) return <AdminPage setPage={p=>{setPage(p);setShowAdmin(false);}}/>;
+    if (showAdmin) return isAdmin ? <AdminPage setPage={p=>{setPage(p);setShowAdmin(false);}}/> : <HomePage setPage={setPage} cart={cart} setCart={setCart} favorites={favorites} toggleFav={toggleFav}/>;
     switch(page.name) {
       case "home":      return <HomePage setPage={setPage} cart={cart} setCart={setCart} favorites={favorites} toggleFav={toggleFav}/>;
       case "business":  return <BusinessPage biz={page.data} setPage={setPage} cart={cart} setCart={setCart}/>;
@@ -1447,7 +1456,7 @@ function KivoApp() {
           { id:"cart",      icon:Ic.cart,     label:"Carrito", badge:cartCount },
           { id:"favorites", icon:Ic.heart,    label:"Favoritos", badge:favorites.length },
           { id:"account",   icon:Ic.user,     label:"Cuenta" },
-          { id:"admin",     icon:Ic.settings, label:"Admin" },
+          ...(isAdmin ? [{ id:"admin", icon:Ic.settings, label:"Admin" }] : []),
         ].map(item => (
           <button key={item.id}
             style={S.navBtn((item.id==="admin"?showAdmin:tab===item.id||page.name===item.id))}
