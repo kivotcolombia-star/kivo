@@ -239,7 +239,13 @@ function HomePage({ setPage, cart, setCart, favorites, toggleFav }) {
     return matchCat && matchSearch;
   });
 
-  const offers = businesses.flatMap(b => (b.products||[]).filter(p=>p.offer).slice(0,2).map(p=>({...p,biz:b})));
+  // Separar por plan
+  const premium   = filtered.filter(b => b.plan === "premium");
+  const destacado = filtered.filter(b => b.plan === "destacado");
+  const basico    = filtered.filter(b => !b.plan || b.plan === "basico");
+
+  // Ofertas solo de negocios destacado o premium
+  const offerBiz = businesses.filter(b => b.plan === "destacado" || b.plan === "premium");
 
   return (
     <div style={S.page}>
@@ -274,22 +280,18 @@ function HomePage({ setPage, cart, setCart, favorites, toggleFav }) {
         {/* Carrusel de banners */}
         {!search && filter==="all" && <BannersCarousel/>}
 
-        {/* Ofertas del día */}
-        {!search && offers.length > 0 && (
+        {/* Ofertas del día — solo destacado y premium */}
+        {!search && offerBiz.length > 0 && (
           <section style={{ marginBottom:20 }}>
             <h2 style={{ fontSize:16, fontWeight:800, padding:"0 16px", marginBottom:10 }}>🔥 Ofertas del día</h2>
             <div style={{ overflowX:"auto", display:"flex", gap:12, padding:"2px 16px 8px", scrollbarWidth:"none" }}>
-              {offers.map(p => (
-                <div key={p.id} onClick={()=>setPage({name:"business",data:p.biz})}
+              {offerBiz.map(b => (
+                <div key={b.id} onClick={()=>setPage({name:"business",data:b})}
                   style={{ minWidth:140, background:"#fff", borderRadius:13, overflow:"hidden", border:"1px solid var(--border)", flexShrink:0, cursor:"pointer" }}>
-                  <img src={p.image||"https://via.placeholder.com/140x80?text=Producto"} alt={p.name} style={{ width:"100%", height:80, objectFit:"cover" }}/>
+                  <img src={b.image||"https://via.placeholder.com/140x80?text="+b.name} alt={b.name} style={{ width:"100%", height:80, objectFit:"cover" }}/>
                   <div style={{ padding:"7px 9px" }}>
-                    <div style={{ fontSize:10, color:"var(--muted)" }}>{p.biz.name}</div>
-                    <div style={{ fontSize:11, fontWeight:700, margin:"2px 0" }}>{p.name}</div>
-                    <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-                      <span style={{ color:"var(--orange)", fontWeight:800, fontSize:12 }}>{fmt(p.offerPrice)}</span>
-                      <span style={{ color:"var(--muted)", fontSize:10, textDecoration:"line-through" }}>{fmt(p.price)}</span>
-                    </div>
+                    <div style={{ fontSize:11, fontWeight:700 }}>{b.name}</div>
+                    <div style={{ fontSize:10, color:"var(--orange)", fontWeight:600, marginTop:2 }}>Ver ofertas →</div>
                   </div>
                 </div>
               ))}
@@ -297,28 +299,58 @@ function HomePage({ setPage, cart, setCart, favorites, toggleFav }) {
           </section>
         )}
 
-        {/* Lista de negocios */}
-        <section style={{ padding:"0 16px" }}>
-          <h2 style={{ fontSize:16, fontWeight:800, marginBottom:12 }}>
-            {filter==="all" ? "🏪 Todos los negocios" : categories.find(c=>c.id===filter)?.emoji + " " + categories.find(c=>c.id===filter)?.label}
-          </h2>
-          {loading ? (
-            <div style={{ display:"flex", justifyContent:"center", padding:"40px 0" }}><Spinner/></div>
-          ) : filtered.length === 0 ? (
-            <div style={{ textAlign:"center", color:"var(--muted)", padding:"40px 0" }}>
-              <div style={{ fontSize:36, marginBottom:10 }}>🔍</div>
-              <div>No encontramos resultados</div>
-            </div>
-          ) : (
-            <div style={{ overflowX:"auto", display:"flex", gap:13, padding:"2px 16px 8px", marginLeft:-16, scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
-              {filtered.map(biz => (
-                <div key={biz.id} style={{ minWidth:145, maxWidth:145, flexShrink:0, width:145 }}>
-                  <BizCard biz={biz} onClick={()=>setPage({name:"business",data:biz})} favorites={favorites} toggleFav={toggleFav}/>
+        {loading ? (
+          <div style={{ display:"flex", justifyContent:"center", padding:"40px 0" }}><Spinner/></div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign:"center", color:"var(--muted)", padding:"40px 0" }}>
+            <div style={{ fontSize:36, marginBottom:10 }}>🔍</div>
+            <div>No encontramos resultados</div>
+          </div>
+        ) : (
+          <>
+            {/* Negocios Premium — Recomendados */}
+            {premium.length > 0 && (
+              <section style={{ padding:"0 16px", marginBottom:22 }}>
+                <h2 style={{ fontSize:16, fontWeight:800, marginBottom:12 }}>👑 Recomendados</h2>
+                <div style={{ overflowX:"auto", display:"flex", gap:13, padding:"2px 0 8px", scrollbarWidth:"none" }}>
+                  {premium.map(biz => (
+                    <div key={biz.id} style={{ minWidth:145, maxWidth:145, flexShrink:0 }}>
+                      <BizCard biz={biz} onClick={()=>setPage({name:"business",data:biz})} favorites={favorites} toggleFav={toggleFav}/>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              </section>
+            )}
+
+            {/* Negocios Destacados */}
+            {destacado.length > 0 && (
+              <section style={{ padding:"0 16px", marginBottom:22 }}>
+                <h2 style={{ fontSize:16, fontWeight:800, marginBottom:12 }}>⭐ Destacados</h2>
+                <div style={{ overflowX:"auto", display:"flex", gap:13, padding:"2px 0 8px", scrollbarWidth:"none" }}>
+                  {destacado.map(biz => (
+                    <div key={biz.id} style={{ minWidth:145, maxWidth:145, flexShrink:0 }}>
+                      <BizCard biz={biz} onClick={()=>setPage({name:"business",data:biz})} favorites={favorites} toggleFav={toggleFav}/>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Todos los negocios */}
+            <section style={{ padding:"0 16px" }}>
+              <h2 style={{ fontSize:16, fontWeight:800, marginBottom:12 }}>
+                {filter==="all" ? "🏪 Todos los negocios" : categories.find(c=>c.id===filter)?.emoji + " " + categories.find(c=>c.id===filter)?.label}
+              </h2>
+              <div style={{ overflowX:"auto", display:"flex", gap:13, padding:"2px 0 8px", scrollbarWidth:"none", WebkitOverflowScrolling:"touch" }}>
+                {[...premium, ...destacado, ...basico].map(biz => (
+                  <div key={biz.id} style={{ minWidth:145, maxWidth:145, flexShrink:0, width:145 }}>
+                    <BizCard biz={biz} onClick={()=>setPage({name:"business",data:biz})} favorites={favorites} toggleFav={toggleFav}/>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );
@@ -326,6 +358,9 @@ function HomePage({ setPage, cart, setCart, favorites, toggleFav }) {
 
 function BizCard({ biz, onClick, favorites, toggleFav }) {
   const isFav = favorites.includes(biz.id);
+  const planBadge = biz.plan === "premium"   ? { label:"👑 Premium",   bg:"#6C3483", color:"#fff" }
+                  : biz.plan === "destacado" ? { label:"⭐ Destacado", bg:"#FF5722", color:"#fff" }
+                  : null;
   return (
     <div style={{ ...S.card, cursor:"pointer" }} onClick={onClick} className="fadeup">
       <div style={{ position:"relative" }}>
@@ -334,7 +369,11 @@ function BizCard({ biz, onClick, favorites, toggleFav }) {
           style={{ position:"absolute", top:9, right:9, background:"rgba(0,0,0,.35)", borderRadius:"50%", width:30, height:30, border:"none", color:isFav?"#FF4757":"#fff", display:"flex", alignItems:"center", justifyContent:"center" }}>
           {Ic.heart}
         </button>
-        {biz.featured && <span style={{ position:"absolute", top:9, left:9, background:"var(--orange)", color:"#fff", borderRadius:8, padding:"2px 8px", fontSize:9, fontWeight:700 }}>DESTACADO</span>}
+        {planBadge && (
+          <span style={{ position:"absolute", top:9, left:9, background:planBadge.bg, color:planBadge.color, borderRadius:8, padding:"2px 8px", fontSize:9, fontWeight:700 }}>
+            {planBadge.label}
+          </span>
+        )}
       </div>
       <div style={{ padding:"8px 10px 10px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:9 }}>
@@ -346,7 +385,6 @@ function BizCard({ biz, onClick, favorites, toggleFav }) {
         </div>
         <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:6, fontSize:10, color:"var(--muted)" }}>
           <span style={{ display:"flex", alignItems:"center", gap:2 }}>{Ic.time} {biz.deliveryTime||"30-45 min"}</span>
-          <span style={{ display:"flex", alignItems:"center", gap:2 }}>{Ic.tag} {fmt(biz.deliveryCost||3500)}</span>
         </div>
       </div>
     </div>
@@ -418,7 +456,6 @@ function BusinessPage({ biz, setPage, cart, setCart }) {
       <div style={{ padding:"13px 16px" }}>
         <div style={{ display:"flex", gap:14, fontSize:11, color:"var(--muted)", marginBottom:12 }}>
           <span style={{ display:"flex", alignItems:"center", gap:3 }}>{Ic.time} {biz.deliveryTime||"30-45 min"}</span>
-          <span style={{ display:"flex", alignItems:"center", gap:3 }}>{Ic.tag} {fmt(biz.deliveryCost||3500)}</span>
           <span>🕒 {biz.hours||"8am-8pm"}</span>
         </div>
         {biz.description && <p style={{ fontSize:13, color:"var(--muted)", marginBottom:14, lineHeight:1.5 }}>{biz.description}</p>}
@@ -485,77 +522,42 @@ function BusinessPage({ biz, setPage, cart, setCart }) {
 }
 
 // ── CART PAGE ─────────────────────────────────────────────────────────────────
-const DELIVERY_RATES = [
-  { maxKm:1.5, cost:3500 },
-  { maxKm:2.5, cost:4200 },
-  { maxKm:3.5, cost:5000 },
-  { maxKm:5.0, cost:6500 },
-];
-
-function calcDeliveryCost(distKm) {
-  for (const r of DELIVERY_RATES) {
-    if (distKm <= r.maxKm) return r.cost;
-  }
-  return null; // fuera de rango
-}
-
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2-lat1)*Math.PI/180;
-  const dLon = (lon2-lon1)*Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
 function CartPage({ cart, setCart, setPage }) {
   const [step, setStep] = useState("cart");
   const [form, setForm] = useState({ name:"", phone:"", address:"", barrio:"", notes:"" });
-  const [gpsState, setGpsState] = useState("idle"); // idle | loading | ok | error
+  const [gpsState, setGpsState] = useState("idle");
   const [clientPos, setClientPos] = useState(null);
-  const [distanceKm, setDistanceKm] = useState(null);
+  const [bizWhatsapp, setBizWhatsapp] = useState(null);
   const subtotal = cart.reduce((a,i)=>a+i.price*i.qty, 0);
-
-  // Obtener negocio del carrito (primer item)
   const bizId = cart[0]?.bizId || null;
-  const [bizPos, setBizPos] = useState(null);
 
   useEffect(() => {
     if (!bizId) return;
     db.collection("businesses").doc(bizId).get().then(doc => {
-      if (doc.exists && doc.data().lat && doc.data().lng) {
-        setBizPos({ lat: doc.data().lat, lng: doc.data().lng });
+      if (doc.exists && doc.data().whatsapp) {
+        setBizWhatsapp(doc.data().whatsapp);
       }
     });
   }, [bizId]);
-
-  useEffect(() => {
-    if (clientPos && bizPos) {
-      const d = haversineKm(clientPos.lat, clientPos.lng, bizPos.lat, bizPos.lng);
-      setDistanceKm(Math.round(d*100)/100);
-    }
-  }, [clientPos, bizPos]);
 
   const getGPS = () => {
     setGpsState("loading");
     navigator.geolocation.getCurrentPosition(
       pos => { setClientPos({ lat:pos.coords.latitude, lng:pos.coords.longitude }); setGpsState("ok"); },
-      ()  => setGpsState("error"),
+      ()   => setGpsState("error"),
       { enableHighAccuracy:true, timeout:10000 }
     );
   };
 
-  const deliveryCost = distanceKm !== null ? calcDeliveryCost(distanceKm) : null;
-  const outOfRange = distanceKm !== null && deliveryCost === null;
-  const total = subtotal + (deliveryCost||0);
-  const canSend = form.name && form.phone && form.address && deliveryCost !== null && !outOfRange;
+  const canSend = form.name && form.phone && form.address && form.barrio;
 
   const sendWhatsApp = () => {
     if (!canSend) return;
     const items = cart.map(i=>`• ${i.name} x${i.qty} — ${fmt(i.price*i.qty)}`).join("\n");
-    const mapsLink = clientPos ? `https://maps.google.com/?q=${clientPos.lat},${clientPos.lng}` : "";
-    const distInfo = distanceKm ? `\n*Distancia:* ${distanceKm} km` : "";
-    const locationLine = mapsLink ? `\n*Ubicación:* ${mapsLink}` : "";
-    const msg = `🛵 *Pedido KIVO*\n\n*Cliente:* ${form.name}\n*Tel:* ${form.phone}\n*Dir:* ${form.address}, ${form.barrio}${distInfo}${locationLine}\n\n${items}\n\n*Subtotal:* ${fmt(subtotal)}\n*Domicilio:* ${fmt(deliveryCost)}\n*TOTAL:* ${fmt(total)}${form.notes?`\n*Notas:* ${form.notes}`:""}`;    window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
+    const mapsLink = clientPos ? `\n📍 *Ubicación:* https://maps.google.com/?q=${clientPos.lat},${clientPos.lng}` : "";
+    const msg = `🛵 *Pedido KIVO*\n\n*Cliente:* ${form.name}\n*Tel:* ${form.phone}\n*Dir:* ${form.address}\n*Barrio:* ${form.barrio}${mapsLink}${form.notes?`\n*Notas:* ${form.notes}`:""}\n\n${items}\n\n*TOTAL:* ${fmt(subtotal)}`;
+    const waNumber = bizWhatsapp || ADMIN_WHATSAPP;
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank");
     setCart([]);
     setStep("success");
   };
@@ -564,7 +566,7 @@ function CartPage({ cart, setCart, setPage }) {
     <div style={{ ...S.page, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, minHeight:"70vh" }}>
       <div style={{ fontSize:72 }}>🎉</div>
       <h2 style={{ fontWeight:800, fontSize:22, marginTop:18, marginBottom:8 }}>¡Pedido enviado!</h2>
-      <p style={{ color:"var(--muted)", textAlign:"center", fontSize:14, lineHeight:1.6 }}>Tu pedido fue enviado por WhatsApp. Pronto recibirás confirmación.</p>
+      <p style={{ color:"var(--muted)", textAlign:"center", fontSize:14, lineHeight:1.6 }}>Tu pedido fue enviado por WhatsApp al negocio. Pronto recibirás confirmación.</p>
       <button onClick={()=>setPage({name:"home"})} style={{ ...S.btnPrimary, marginTop:26, maxWidth:240 }}>Volver al inicio</button>
     </div>
   );
@@ -579,12 +581,13 @@ function CartPage({ cart, setCart, setPage }) {
       </div>
       <div style={{ padding:16, display:"flex", flexDirection:"column", gap:13 }}>
 
-        {/* GPS */}
+        {/* GPS opcional */}
         <div style={{ background:"var(--surface)", borderRadius:13, padding:"13px 15px", border:"1px solid var(--border)" }}>
-          <div style={{ fontWeight:700, fontSize:13, marginBottom:8 }}>📍 Tu ubicación</div>
+          <div style={{ fontWeight:700, fontSize:13, marginBottom:4 }}>📍 Compartir ubicación <span style={{ fontWeight:400, color:"var(--muted)", fontSize:11 }}>(opcional)</span></div>
+          <div style={{ fontSize:12, color:"var(--muted)", marginBottom:8 }}>Facilita la entrega al negocio</div>
           {gpsState==="idle" && (
-            <button onClick={getGPS} style={{ ...S.btnPrimary, fontSize:13, padding:"10px" }}>
-              📡 Detectar ubicación automáticamente
+            <button onClick={getGPS} style={{ ...S.btnOutline, fontSize:13, padding:"9px" }}>
+              📡 Compartir mi ubicación
             </button>
           )}
           {gpsState==="loading" && (
@@ -592,56 +595,36 @@ function CartPage({ cart, setCart, setPage }) {
               <Spinner/> Obteniendo ubicación...
             </div>
           )}
-          {gpsState==="ok" && distanceKm !== null && !outOfRange && (
-            <div style={{ background:"#E8F5E9", borderRadius:10, padding:"10px 13px" }}>
-              <div style={{ color:"var(--green)", fontWeight:700, fontSize:13 }}>✅ Ubicación detectada</div>
-              <div style={{ color:"var(--green)", fontSize:12, marginTop:3 }}>Distancia: {distanceKm} km · Domicilio: {fmt(deliveryCost)}</div>
-              <button onClick={getGPS} style={{ background:"none", color:"var(--green)", fontSize:12, fontWeight:600, padding:0, marginTop:6 }}>🔄 Volver a detectar</button>
-            </div>
-          )}
-          {gpsState==="ok" && outOfRange && (
-            <div style={{ background:"#FFEBEE", borderRadius:10, padding:"10px 13px" }}>
-              <div style={{ color:"var(--red)", fontWeight:700, fontSize:13 }}>❌ Fuera de cobertura</div>
-              <div style={{ color:"var(--red)", fontSize:12, marginTop:3 }}>Estás a {distanceKm} km — solo cubrimos hasta 5 km</div>
-              <button onClick={getGPS} style={{ background:"none", color:"var(--red)", fontSize:12, fontWeight:600, padding:0, marginTop:6 }}>🔄 Volver a detectar</button>
-            </div>
-          )}
-          {gpsState==="ok" && !bizPos && (
-            <div style={{ background:"#FFF3E0", borderRadius:10, padding:"10px 13px", marginTop:8 }}>
-              <div style={{ color:"#E65100", fontSize:12 }}>⚠️ Este negocio aún no tiene ubicación configurada en el Admin</div>
+          {gpsState==="ok" && (
+            <div style={{ background:"#E8F5E9", borderRadius:10, padding:"10px 13px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ color:"var(--green)", fontWeight:700, fontSize:13 }}>✅ Ubicación compartida</div>
+              <button onClick={getGPS} style={{ background:"none", color:"var(--green)", fontSize:12, fontWeight:600, padding:0 }}>🔄</button>
             </div>
           )}
           {gpsState==="error" && (
-            <div>
-              <div style={{ background:"#FFF3E0", borderRadius:10, padding:"10px 13px", marginBottom:8 }}>
-                <div style={{ color:"#E65100", fontWeight:700, fontSize:13 }}>⚠️ No se pudo obtener GPS</div>
-                <div style={{ color:"#E65100", fontSize:12, marginTop:3 }}>Permite el acceso a ubicación en tu navegador</div>
-              </div>
-              <button onClick={getGPS} style={{ ...S.btnOutline, fontSize:13, padding:"8px 14px" }}>Intentar de nuevo</button>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ color:"#E65100", fontSize:12 }}>⚠️ No se pudo obtener ubicación</div>
+              <button onClick={getGPS} style={{ background:"none", color:"var(--orange)", fontSize:12, fontWeight:600, padding:0 }}>Reintentar</button>
             </div>
           )}
         </div>
 
-        {[{k:"name",l:"Nombre completo",p:"Ej: Juan Pérez",t:"text"},{k:"phone",l:"Teléfono",p:"3001234567",t:"tel"},{k:"address",l:"Dirección",p:"Calle 7 # 4-20",t:"text"},{k:"barrio",l:"Barrio",p:"Centro",t:"text"},{k:"notes",l:"Notas (opcional)",p:"Instrucciones especiales...",t:"text"}].map(f=>(
+        {[{k:"name",l:"Nombre completo *",p:"Ej: Juan Pérez",t:"text"},{k:"phone",l:"Teléfono *",p:"3001234567",t:"tel"},{k:"address",l:"Dirección *",p:"Calle 7 # 4-20",t:"text"},{k:"barrio",l:"Barrio *",p:"Centro",t:"text"},{k:"notes",l:"Notas (opcional)",p:"Instrucciones especiales...",t:"text"}].map(f=>(
           <div key={f.k}>
             <label style={{ fontSize:12, fontWeight:600, color:"var(--muted)" }}>{f.l}</label>
             <input type={f.t} placeholder={f.p} value={form[f.k]} onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))} style={S.input}/>
           </div>
         ))}
+
         <div style={{ background:"var(--surface)", borderRadius:13, padding:"13px 15px", border:"1px solid var(--border)" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, fontSize:13, color:"var(--muted)" }}><span>Subtotal</span><span>{fmt(subtotal)}</span></div>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:11, fontSize:13, color:"var(--muted)" }}>
-            <span>Domicilio {distanceKm ? `(${distanceKm} km)` : ""}</span>
-            <span>{deliveryCost ? fmt(deliveryCost) : "—"}</span>
-          </div>
-          <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, fontSize:17, borderTop:"1px solid var(--border)", paddingTop:10 }}><span>TOTAL</span><span style={{ color:"var(--orange)" }}>{deliveryCost ? fmt(total) : "—"}</span></div>
+          <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, fontSize:17 }}><span>TOTAL</span><span style={{ color:"var(--orange)" }}>{fmt(subtotal)}</span></div>
         </div>
+
         <button onClick={sendWhatsApp} disabled={!canSend}
           style={{ ...(canSend?S.btnGreen:{...S.btnGreen, background:"var(--surface)", color:"var(--muted)"}), cursor:canSend?"pointer":"default" }}>
           {Ic.whatsapp} Confirmar por WhatsApp
         </button>
-        {!gpsState.match(/ok/) && <p style={{ textAlign:"center", fontSize:12, color:"var(--muted)" }}>Debes detectar tu ubicación para continuar</p>}
-        {outOfRange && <p style={{ textAlign:"center", fontSize:12, color:"var(--red)", fontWeight:600 }}>No podemos llegar a tu ubicación</p>}
+        {!canSend && <p style={{ textAlign:"center", fontSize:12, color:"var(--muted)" }}>Completa todos los campos para continuar</p>}
       </div>
     </div>
   );
@@ -650,7 +633,6 @@ function CartPage({ cart, setCart, setPage }) {
     <div style={S.page}>
       <div style={S.topbar}>
         <h1 style={{ fontWeight:800, fontSize:20 }}>🛒 Mi carrito</h1>
-        {cart[0]?.bizId && <div style={{ fontSize:12, color:"var(--muted)", marginTop:2 }}>📦 {cart[0]?.name ? "" : ""}{cart.length > 0 ? `Pedido de 1 negocio` : ""}</div>}
       </div>
       {cart.length===0 ? (
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:40, minHeight:"60vh" }}>
@@ -677,9 +659,7 @@ function CartPage({ cart, setCart, setPage }) {
             ))}
           </div>
           <div style={{ background:"#fff", borderRadius:14, padding:15, border:"1px solid var(--border)", marginBottom:14 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:7, fontSize:13, color:"var(--muted)" }}><span>Subtotal ({cart.reduce((a,i)=>a+i.qty,0)} items)</span><span>{fmt(subtotal)}</span></div>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:11, fontSize:13, color:"var(--muted)" }}><span>Domicilio</span><span>{fmt(deliveryCost)}</span></div>
-            <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, fontSize:17, borderTop:"1px solid var(--border)", paddingTop:11 }}><span>TOTAL</span><span style={{ color:"var(--orange)" }}>{fmt(total)}</span></div>
+            <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, fontSize:17, borderTop:"1px solid var(--border)", paddingTop:11 }}><span>TOTAL</span><span style={{ color:"var(--orange)" }}>{fmt(subtotal)}</span></div>
           </div>
           <button onClick={()=>setStep("checkout")} style={S.btnPrimary}>Continuar al pedido →</button>
         </div>
@@ -877,12 +857,11 @@ function AdminPage({ setPage }) {
         description: form.description||"",
         category: form.category||"supermarkets",
         deliveryTime: form.deliveryTime||"30-45 min",
-        deliveryCost: Number(form.deliveryCost)||3500,
+        whatsapp: form.whatsapp||"",
         hours: form.hours||"8am-8pm",
         image: form.image||"",
         logo: form.logo||"",
-        lat: form.lat||null,
-        lng: form.lng||null,
+        plan: form.plan||"basico",
         featured: form.featured||false,
         active: form.active!==false,
         order: Number(form.order)||99,
@@ -953,7 +932,7 @@ function AdminPage({ setPage }) {
           </div>
         </div>
 
-        {[{k:"name",l:"Nombre *",p:"Ej: Ara Mariquita"},{k:"description",l:"Descripción",p:"Descripción breve"},{k:"hours",l:"Horario",p:"7am - 9pm"},{k:"deliveryTime",l:"Tiempo de entrega",p:"30-45 min"}].map(f=>(
+        {[{k:"name",l:"Nombre *",p:"Ej: Ara Mariquita"},{k:"description",l:"Descripción",p:"Descripción breve"},{k:"hours",l:"Horario",p:"7am - 9pm"},{k:"deliveryTime",l:"Tiempo de entrega",p:"30-45 min"},{k:"whatsapp",l:"WhatsApp del negocio *",p:"573001234567"}].map(f=>(
           <div key={f.k}>
             <label style={{ fontSize:12, fontWeight:600, color:"var(--muted)" }}>{f.l}</label>
             <input placeholder={f.p} value={form[f.k]||""} onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))} style={S.input}/>
@@ -967,21 +946,15 @@ function AdminPage({ setPage }) {
           </div>
         </div>
 
-        {/* Ubicación del negocio */}
-        <div style={{ background:"var(--surface)", borderRadius:13, padding:"13px 15px", border:"1px solid var(--border)" }}>
-          <div style={{ fontWeight:700, fontSize:13, marginBottom:4 }}>📍 Ubicación del negocio</div>
-          <div style={{ fontSize:11, color:"var(--muted)", marginBottom:10 }}>Necesaria para calcular el domicilio. Busca la dirección en Google Maps, toca el pin y copia las coordenadas.</div>
-          <div style={{ display:"flex", gap:11 }}>
-            <div style={{ flex:1 }}>
-              <label style={{ fontSize:12, fontWeight:600, color:"var(--muted)" }}>Latitud</label>
-              <input type="number" step="any" placeholder="4.1234" value={form.lat||""} onChange={e=>setForm(p=>({...p,lat:parseFloat(e.target.value)}))} style={S.input}/>
-            </div>
-            <div style={{ flex:1 }}>
-              <label style={{ fontSize:12, fontWeight:600, color:"var(--muted)" }}>Longitud</label>
-              <input type="number" step="any" placeholder="-74.5678" value={form.lng||""} onChange={e=>setForm(p=>({...p,lng:parseFloat(e.target.value)}))} style={S.input}/>
-            </div>
-          </div>
-          <a href="https://maps.google.com" target="_blank" style={{ display:"inline-block", marginTop:8, fontSize:12, color:"var(--orange)", fontWeight:600 }}>🗺️ Abrir Google Maps para buscar coordenadas</a>
+
+
+        <div>
+          <label style={{ fontSize:12, fontWeight:600, color:"var(--muted)" }}>Plan de membresía</label>
+          <select value={form.plan||"basico"} onChange={e=>setForm(p=>({...p,plan:e.target.value}))} style={{ ...S.input, marginTop:6 }}>
+            <option value="basico">🟢 Básico — $20.000/mes</option>
+            <option value="destacado">⭐ Destacado — $50.000/mes</option>
+            <option value="premium">👑 Premium — $100.000/mes</option>
+          </select>
         </div>
 
         <div>
