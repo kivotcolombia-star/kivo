@@ -357,6 +357,7 @@ function BizCard({ biz, onClick, favorites, toggleFav }) {
 function BusinessPage({ biz, setPage, cart, setCart }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mainCat, setMainCat] = useState("Todos");
   const [subcat, setSubcat] = useState("Todos");
 
   useEffect(() => {
@@ -368,8 +369,36 @@ function BusinessPage({ biz, setPage, cart, setCart }) {
       }).catch(()=>setLoading(false));
   }, [biz.id]);
 
-  const subcats = ["Todos", ...new Set(products.map(p=>p.category||p.cat||"General"))];
-  const filtered = subcat==="Todos" ? products : products.filter(p=>(p.category||p.cat||"General")===subcat);
+  // Obtener categorías principales únicas
+  const catMap = {
+    supermarkets: {
+      "Alimentos y Despensa": ["Condimentos","Enlatados y Envasados","Pasta","Granos, Azúcar y Panela","Harinas y Pre-mezclas","Margarinas y Aceites","Salsas y Aderezos","Huevos"],
+      "Aseo del Hogar": ["Accesorios de Limpieza","Cuidado de la Ropa","Cuidado de Superficies y Cocina","Cuidado del Aire","Desechables"],
+      "Aseo y Cuidado Personal": ["Afeitado","Cuidado Capilar","Cuidado Corporal","Cuidado Oral","Desodorantes","Jabonería","Papel Higiénico y Pañuelos"],
+      "Lácteos": ["Leches","Quesos","Yogures","Otros Derivados"],
+      "Mascotas": ["Alimentación Gatos","Alimentación Perros","Aseo de Mascotas"],
+      "Bebidas": ["Cervezas","Aguas","Bebidas Vegetales","Gaseosas","Isotónicas y Energizantes","Infusiones, Té, Cafés y Chocolates","Jugos, Refrescos y Néctares"],
+    },
+    restaurants:  { "Menú": ["Platos","Combos","Entradas","Desayunos","Postres","Bebidas"] },
+    pharmacies:   { "Productos": ["Medicamentos","Belleza","Bebé","Vitaminas","Primeros Auxilios"] },
+    bakeries:     { "Productos": ["Panes","Pasteles","Tortas","Desayunos","Bebidas"] },
+    stores:       { "Productos": ["General","Ofertas","Más Vendido"] },
+  };
+
+  const bizCatMap = catMap[biz.category] || {};
+  const hasCategories = Object.keys(bizCatMap).length > 0;
+
+  // Subcats disponibles según categoría principal seleccionada
+  const availableSubcats = mainCat === "Todos" ? [] : (bizCatMap[mainCat] || []);
+
+  // Filtrar productos
+  const filtered = products.filter(p => {
+    const pcat = p.category || p.cat || "General";
+    if (mainCat === "Todos") return true;
+    const subcatsOfMain = bizCatMap[mainCat] || [];
+    if (subcat === "Todos") return subcatsOfMain.includes(pcat);
+    return pcat === subcat;
+  });
 
   return (
     <div style={S.page}>
@@ -394,9 +423,31 @@ function BusinessPage({ biz, setPage, cart, setCart }) {
         </div>
         {biz.description && <p style={{ fontSize:13, color:"var(--muted)", marginBottom:14, lineHeight:1.5 }}>{biz.description}</p>}
 
-        <div style={{ overflowX:"auto", display:"flex", gap:7, marginBottom:14, scrollbarWidth:"none" }}>
-          {subcats.map(s => <button key={s} style={S.chip(subcat===s)} onClick={()=>setSubcat(s)}>{s}</button>)}
-        </div>
+        {/* Categorías principales */}
+        {hasCategories && (
+          <div style={{ overflowX:"auto", display:"flex", gap:7, marginBottom:8, scrollbarWidth:"none" }}>
+            <button style={S.chip(mainCat==="Todos")} onClick={()=>{ setMainCat("Todos"); setSubcat("Todos"); }}>Todos</button>
+            {Object.keys(bizCatMap).map(cat => (
+              <button key={cat} style={S.chip(mainCat===cat)} onClick={()=>{ setMainCat(cat); setSubcat("Todos"); }}>{cat}</button>
+            ))}
+          </div>
+        )}
+        {/* Subcategorías */}
+        {mainCat !== "Todos" && availableSubcats.length > 0 && (
+          <div style={{ overflowX:"auto", display:"flex", gap:7, marginBottom:14, scrollbarWidth:"none" }}>
+            <button style={{ ...S.chip(subcat==="Todos"), fontSize:11 }} onClick={()=>setSubcat("Todos")}>Todos</button>
+            {availableSubcats.map(s => (
+              <button key={s} style={{ ...S.chip(subcat===s), fontSize:11 }} onClick={()=>setSubcat(s)}>{s}</button>
+            ))}
+          </div>
+        )}
+        {!hasCategories && (
+          <div style={{ overflowX:"auto", display:"flex", gap:7, marginBottom:14, scrollbarWidth:"none" }}>
+            {["Todos", ...new Set(products.map(p=>p.category||"General"))].map(s => (
+              <button key={s} style={S.chip(subcat===s)} onClick={()=>setSubcat(s)}>{s}</button>
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div style={{ display:"flex", justifyContent:"center", padding:"40px 0" }}><Spinner/></div>
@@ -1307,27 +1358,53 @@ function ProductsAdmin({ biz, onBack }) {
 
         {/* Subcategorías predefinidas + personalizada */}
         <div>
-          <label style={{ fontSize:12, fontWeight:600, color:"var(--muted)" }}>Subcategoría</label>
+          <label style={{ fontSize:12, fontWeight:600, color:"var(--muted)" }}>Categoría</label>
           <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginTop:8, marginBottom:8 }}>
             {(() => {
               const catMap = {
-                supermarkets: ["Lácteos","Bebidas","Carnes","Frutas y Verduras","Aseo","Granos","Snacks","Panadería","Congelados"],
-                restaurants:  ["Platos","Combos","Bebidas","Postres","Entradas","Desayunos"],
-                pharmacies:   ["Medicamentos","Belleza","Bebé","Vitaminas","Primeros Auxilios"],
-                bakeries:     ["Panes","Pasteles","Bebidas","Desayunos","Tortas"],
-                stores:       ["General","Ofertas","Más vendido"],
+                supermarkets: {
+                  "Alimentos y Despensa": ["Condimentos","Enlatados y Envasados","Pasta","Granos, Azúcar y Panela","Harinas y Pre-mezclas","Margarinas y Aceites","Salsas y Aderezos","Huevos"],
+                  "Aseo del Hogar": ["Accesorios de Limpieza","Cuidado de la Ropa","Cuidado de Superficies y Cocina","Cuidado del Aire","Desechables"],
+                  "Aseo y Cuidado Personal": ["Afeitado","Cuidado Capilar","Cuidado Corporal","Cuidado Oral","Desodorantes","Jabonería","Papel Higiénico y Pañuelos"],
+                  "Lácteos": ["Leches","Quesos","Yogures","Otros Derivados"],
+                  "Mascotas": ["Alimentación Gatos","Alimentación Perros","Aseo de Mascotas"],
+                  "Bebidas": ["Cervezas","Aguas","Bebidas Vegetales","Gaseosas","Isotónicas y Energizantes","Infusiones, Té, Cafés y Chocolates","Jugos, Refrescos y Néctares"],
+                },
+                restaurants:  { "Menú": ["Platos","Combos","Entradas","Desayunos","Postres","Bebidas"] },
+                pharmacies:   { "Productos": ["Medicamentos","Belleza","Bebé","Vitaminas","Primeros Auxilios"] },
+                bakeries:     { "Productos": ["Panes","Pasteles","Tortas","Desayunos","Bebidas"] },
+                stores:       { "Productos": ["General","Ofertas","Más Vendido"] },
               };
-              const cats = catMap[biz.category] || ["General","Otros"];
-              return cats.map(c => (
-                <button key={c} type="button"
-                  onClick={()=>setForm(p=>({...p,category:c,customCat:""}))}
-                  style={{ padding:"5px 12px", borderRadius:20, fontSize:12, fontWeight:600, border:"1.5px solid", borderColor:form.category===c?"var(--orange)":"var(--border)", background:form.category===c?"var(--orange)":"var(--surface)", color:form.category===c?"#fff":"var(--muted)" }}>
-                  {c}
-                </button>
-              ));
+              const bizCats = catMap[biz.category] || { "General": ["General","Otros"] };
+              const selectedMainCat = form.mainCat || Object.keys(bizCats)[0];
+              const subcats = bizCats[selectedMainCat] || [];
+              return (
+                <div style={{ width:"100%" }}>
+                  {/* Categorías principales */}
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:10 }}>
+                    {Object.keys(bizCats).map(cat => (
+                      <button key={cat} type="button"
+                        onClick={()=>setForm(p=>({...p,mainCat:cat,category:""}))}
+                        style={{ padding:"5px 12px", borderRadius:20, fontSize:12, fontWeight:600, border:"1.5px solid", borderColor:selectedMainCat===cat?"var(--orange)":"var(--border)", background:selectedMainCat===cat?"var(--orange)":"var(--surface)", color:selectedMainCat===cat?"#fff":"var(--muted)" }}>
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Subcategorías */}
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {subcats.map(sub => (
+                      <button key={sub} type="button"
+                        onClick={()=>setForm(p=>({...p,category:sub,customCat:""}))}
+                        style={{ padding:"4px 10px", borderRadius:20, fontSize:11, fontWeight:600, border:"1.5px solid", borderColor:form.category===sub?"#9B59B6":"var(--border)", background:form.category===sub?"#9B59B6":"var(--surface)", color:form.category===sub?"#fff":"var(--muted)" }}>
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
             })()}
           </div>
-          <input placeholder="O escribe una personalizada..." value={form.customCat||""} onChange={e=>setForm(p=>({...p,customCat:e.target.value,category:e.target.value||p.category}))} style={S.input}/>
+          <input placeholder="O escribe una subcategoría personalizada..." value={form.customCat||""} onChange={e=>setForm(p=>({...p,customCat:e.target.value,category:e.target.value||p.category}))} style={S.input}/>
         </div>
 
         <div style={{ display:"flex", gap:11 }}>
